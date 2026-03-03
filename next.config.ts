@@ -1,10 +1,10 @@
 import path from "node:path";
-import { execSync } from "node:child_process";
+import { execFileSync } from "node:child_process";
 import type { NextConfig } from "next";
 
 function git(cmd: string): string {
   try {
-    return execSync(`git ${cmd}`, { encoding: "utf-8", timeout: 5000 }).trim();
+    return execFileSync("git", cmd.split(" "), { encoding: "utf-8", timeout: 5000 }).trim();
   } catch {
     return "";
   }

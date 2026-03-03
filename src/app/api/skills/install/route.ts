@@ -24,6 +24,16 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  // Basic package name validation: allow alphanumeric, @, /, ., -, _
+  // This covers npm scoped packages (@scope/pkg), pip, and brew package names.
+  // Disallow sequences that could enable path traversal (..) or ambiguous paths (//).
+  if (!/^[a-zA-Z0-9@][a-zA-Z0-9@/._-]*$/.test(pkg) || pkg.includes("..") || pkg.includes("//")) {
+    return new Response(
+      JSON.stringify({ error: "invalid package name" }),
+      { status: 400, headers: { "Content-Type": "application/json" } }
+    );
+  }
+
   // Build command based on kind
   let cmd: string;
   let args: string[];

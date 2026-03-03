@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { spawn, execSync, type ChildProcessWithoutNullStreams } from "child_process";
+import { spawn, execFileSync, type ChildProcessWithoutNullStreams } from "child_process";
 import { getOpenClawHome } from "@/lib/paths";
 
 export const dynamic = "force-dynamic";
@@ -154,7 +154,7 @@ function findPython3(): string {
   const candidates = ["python3", "/usr/bin/python3", "/opt/homebrew/bin/python3", "/usr/local/bin/python3"];
   for (const p of candidates) {
     try {
-      execSync(`${p} --version`, { stdio: "pipe", timeout: 3000 });
+      execFileSync(p, ["--version"], { stdio: "pipe", timeout: 3000 });
       return p;
     } catch { /* continue */ }
   }

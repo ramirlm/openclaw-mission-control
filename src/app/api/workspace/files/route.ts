@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { readdir, realpath, stat } from "fs/promises";
-import { extname, join, relative } from "path";
+import { extname, isAbsolute, join, relative } from "path";
+import { homedir } from "os";
 
 type WorkspaceFileRow = {
   relativePath: string;
@@ -88,6 +89,17 @@ export async function GET(request: NextRequest) {
     workspacePath = await realpath(rawPath);
   } catch {
     // keep raw path for better error message
+  }
+
+  // Restrict browsing to the user's home directory to prevent arbitrary
+  // filesystem enumeration from a local network request.
+  const home = homedir();
+  const rel = relative(home, workspacePath);
+  if (isAbsolute(rel) || rel.startsWith("..")) {
+    return NextResponse.json(
+      { error: "Path not allowed: must be within the home directory" },
+      { status: 403 }
+    );
   }
 
   let s;
