@@ -220,7 +220,9 @@ export async function GET(request: NextRequest) {
     }
 
     const limit = clamp(Number(searchParams.get("limit") || 24), 1, 100);
-    const sort = (searchParams.get("sort") || "trending").trim();
+    const sortRaw = (searchParams.get("sort") || "trending").trim();
+    const VALID_SORTS = new Set(["trending", "newest", "downloads", "stars", "updated"]);
+    const sort = VALID_SORTS.has(sortRaw) ? sortRaw : "trending";
     const { stdout } = await runClawHub(["explore", "--limit", String(limit), "--sort", sort, "--json"], 30000);
     const parsed = parseLooseJson<ExplorePayload>(stdout);
     return NextResponse.json({
@@ -238,6 +240,11 @@ export async function POST(request: NextRequest) {
     const action = body.action as string;
     const slug = (body.slug as string | undefined)?.trim();
     const version = (body.version as string | undefined)?.trim();
+
+    // Validate slug early if provided (applies to all actions that accept one).
+    if (slug && !isValidSlug(slug)) {
+      return NextResponse.json({ error: "invalid slug" }, { status: 400 });
+    }
 
     if (action === "install") {
       if (!slug) return NextResponse.json({ error: "slug required" }, { status: 400 });
@@ -265,9 +272,6 @@ export async function POST(request: NextRequest) {
 
     if (action === "uninstall") {
       if (!slug) return NextResponse.json({ error: "slug required" }, { status: 400 });
-      if (!isValidSlug(slug)) {
-        return NextResponse.json({ error: "invalid slug" }, { status: 400 });
-      }
       const result = await uninstallWorkspaceSkill(slug);
       if (!result.removedDir && !result.removedLock) {
         return NextResponse.json(
